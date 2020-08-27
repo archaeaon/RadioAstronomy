@@ -3,6 +3,34 @@ import seaborn
 import math.sine
 
 
+
+
+import sys
+import numpy as np
+import pandas as pd
+
+import seaborn as sns
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+plt.rcParams.update({'font.size': 18})
+plt.style.use('seaborn-whitegrid')
+
+import Data_Structures.DataSet_Abstract as ADS
+import Data_Structures.DataSet_Cycle as CCDS
+import Data_Structures.DataSet_Uniform as CUDS
+import File.Groups
+import File.file
+
+import datetime as dt
+
+strptime = dt.datetime.strptime
+import math
+
+
+
+
+
 Fs = 10000000     # Sampling frequency                    
 T = 1/Fs          # Sampling period       
 L = 1200          # Length of signal
