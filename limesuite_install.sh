@@ -9,3 +9,5 @@ conda update anaconda
 conda install -c conda-forge soapysdr	# soapysdr will just need to be installed through anaconda for it to work
 
 rm Anaconda3-2020.07-Linux-x86_64.sh	# remove the anaconda installer since we won't need it anymore
+
+LimeUtil --update # Make sure that the LimeDriver is using the proper version (REV 23)
