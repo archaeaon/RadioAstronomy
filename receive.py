@@ -11,8 +11,8 @@ fastSweep = True
 
 measName = sys.argv[1]
 
-startFreq = 30e6
-endFreq = 3000e6
+startFreq = 300e6
+endFreq = 350e6
 
 
 ################################
