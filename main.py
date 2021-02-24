@@ -2,7 +2,7 @@ import sys
 import math
 import SoapySDR
 from SoapySDR import *  # SOAPY_SDR_ constants
-import numpy  # use numpy for buffers
+import numpy as np # use numpy for buffers
 import time
 
 
@@ -20,7 +20,7 @@ def FindDevice():
     return SoapySDR.Device(args)
 
 
-def QueryDevice(sdr):
+def QueryDevice(sdr, chan):
     print("Possible Antennas: " + str(sdr.listAntennas(SOAPY_SDR_RX, chan)))
 
     # query device info
@@ -35,36 +35,36 @@ def ConfigureDevice(sdr, MasterClockRate=30.72e6):
     print("Actual Master Clock Rate %f Msps" % (sdr.getMasterClockRate() / 1e6))
 
 
-def ConfigureRX(sdr, channel, RX_SampleRate=None, CenterFrequency=None, RX_Antenna=None, RX_Gain=None,
+def ConfigureRX(sdr, chan, RX_SampleRate=None, CenterFrequency=None, RX_Antenna=None, RX_Gain=None,
                 RX_FrequencyOffset=None):
     if RX_SampleRate is not None:
         print("Setting RX sample rate to %g" % RX_SampleRate)
-        sdr.setSampleRate(SOAPY_SDR_RX, channel, RX_SampleRate)
+        sdr.setSampleRate(SOAPY_SDR_RX, chan, RX_SampleRate)
         print("Actual Rx Rate %f Msps" % (sdr.getSampleRate(SOAPY_SDR_RX, chan) / 1e6))
 
     if CenterFrequency is not None:
         print("Setting RX frequency to %g" % CenterFrequency)
-        sdr.setFrequency(SOAPY_SDR_RX, channel, CenterFrequency)
+        sdr.setFrequency(SOAPY_SDR_RX, chan, CenterFrequency)
         print("Actual Rx Freq %f MHz" % (sdr.getFrequency(SOAPY_SDR_RX, chan) / 1e6))
 
     if RX_Antenna is not None:
         print("Setting RX antenna to " + str(RX_Antenna))
-        sdr.setAntenna(SOAPY_SDR_RX, channel, RX_Antenna)
+        sdr.setAntenna(SOAPY_SDR_RX, chan, RX_Antenna)
         print("Antenna on Channel %i is %s" % (chan, sdr.getAntenna(SOAPY_SDR_RX, chan)))
 
     if RX_Gain is not None:
         print("Setting RX gain to " + str(RX_Gain))
-        sdr.setGain(SOAPY_SDR_RX, channel, RX_Gain)  ###TODO::Is LNA the Default?????
+        sdr.setGain(SOAPY_SDR_RX, chan, RX_Gain)  ###TODO::Is LNA the Default?????
         print("Actual Rx Gain %f " % (sdr.getGain(SOAPY_SDR_RX, chan)))
         # sdr.setGain(SOAPY_SDR_RX, 0, "TIA", 5.0)
         # sdr.setGain(SOAPY_SDR_RX, 0, "PGA", 5.0)
         # sdr.setGain(SOAPY_SDR_RX, 0, "LNA", 35.0)
 
     # #set dc offset mode to False to disable automatic DC bias removal
-    # sdr.setDCOffsetMode(SOAPY_SDR_RX, channel, False)
+    # sdr.setDCOffsetMode(SOAPY_SDR_RX, chan, False)
     # print("Getting RX DC offset mode: " + str(sdr.getDCOffsetMode(SOAPY_SDR_RX, 0)))
     # print("Getting RX DC offset: " + str(sdr.getDCOffset(SOAPY_SDR_RX, 0)))
-    # sdr.setBandwidth(SOAPY_SDR_RX, channel, 5e6)
+    # sdr.setBandwidth(SOAPY_SDR_RX, chan, 5e6)
     # print("Getting RX bandwidth: " + str(sdr.getBandwidth(SOAPY_SDR_RX, 0)))
 
     # sdr.testSignalDC(0x3fff, 0x3fff)
@@ -72,18 +72,18 @@ def ConfigureRX(sdr, channel, RX_SampleRate=None, CenterFrequency=None, RX_Anten
     time.sleep(1)
 
 
-def StartRX(sdr, channel):
+def StartRX(sdr, chan):
     # setup a stream (complex floats)
     print("Setting up RX stream")
     args = dict(skipCal="false")
-    # return sdr.setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32, channel, args)
-    return sdr.setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32, channel)
+    # return sdr.setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32, chan, args)
+    return sdr.setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32, chan)
 
 
 def RunRX(sdr, rxStream):
     ###################################################
     # create a re-usable buffer for rx samples
-    buff = np.array([0] * 2040,
+    """buff = np.array([0] * 2040,
                     np.complex64)
     sdr.activateStream(rxStream, SOAPY_SDR_END_BURST, 0, buff.size)
 
@@ -100,25 +100,25 @@ def RunRX(sdr, rxStream):
 
         totalRead += sr.ret
 
-    print("Total samples read {}".format(totalRead))
+    print("Total samples read {}".format(totalRead))"""
     ###################################################
     # # create a re-usable buffer for rx samples
-    # buff = numpy.array([0] * 1024, numpy.complex64)
-    #
-    # sdr.activateStream(rxStream, SOAPY_SDR_END_BURST, 0, buff.size)
-    #
-    # # receive some samples
-    # for i in range(10):
-    #     sr = sdr.readStream(rxStream, [buff], len(buff))
-    #     print(sr.ret)  # num samples or error code
-    #     print(sr.flags)  # flags set by receive operation
-    #     print(sr.timeNs)  # timestamp for receive buffer
+    buff = np.array([0] * 1024, np.complex64)
+    
+    sdr.activateStream(rxStream, SOAPY_SDR_END_BURST, 0, buff.size)
+    
+    # receive some samples
+    for i in range(10):
+        sr = sdr.readStream(rxStream, [buff], len(buff))
+        print(sr.ret)  # num samples or error code
+        print(sr.flags)  # flags set by receive operation
+        print(sr.timeNs)  # timestamp for receive buffer
 
 
 ####################################
 # # Read samples into this buffer
 # num_samps = 2 ** 14  # 16384 samples
-# sampsRx = [numpy.zeros(num_samps, numpy.complex64), numpy.zeros(num_samps, numpy.complex64)]
+# sampsRx = [np.zeros(num_samps, numpy.complex64), numpy.zeros(num_samps, numpy.complex64)]
 # buff0 = sampsRx[0]  # RF Chain A
 # buff1 = sampsRx[1]  # RF Chain B
 # sdr.activateStream(rxStream,  # stream object
@@ -205,22 +205,22 @@ def CloseTX(sdr):
 
 if __name__ == '__main__':
     ### Desired Parameters ###
-    channel = 0
-    # antenna = "LNAW"
-    # samplerate = 1e5
-    # frequency = 1e9
-    # gain = 20
+    chan = 0
+    antenna = "LNAW"
+    samplerate = 1e5
+    frequency = 1e9
+    gain = 20
     ##########################
 
     sdr = FindDevice()
-    QueryDevice(sdr)
+    #QueryDevice(sdr, chan)
 
-    # ConfigureDevice(sdr)
-    # ConfigureRX(sdr, channel, RX_Antenna=antenna, RX_SampleRate=samplerate, CenterFrequency=frequency, RX_Gain=gain)
+    ConfigureDevice(sdr)
+    ConfigureRX(sdr, chan, RX_Antenna=antenna, RX_SampleRate=samplerate, CenterFrequency=frequency, RX_Gain=gain)
 
-    # rxStream = StartRX(sdr, channel)
-    # RunRX(sdr, rxStream)
-    # CloseRX(sdr, rxStream)
+    rxStream = StartRX(sdr, [chan])
+    RunRX(sdr, rxStream)
+    CloseRX(sdr, rxStream)
 
 # # start streaming
 # sdr.activateStream(rxStream, 0, 0, numSamps)
