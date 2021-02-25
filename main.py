@@ -9,29 +9,30 @@ import time
 def FindDevice():
 	# enumerate devices
 	results = SoapySDR.Device.enumerate()
-	print("Devices: ")
+	print("Devices Found: ")
 	for result in results: print(result)
 
 	# create device instance
 	# args can be user defined or from the enumeration result
-	# args = dict(driver="lime")
-	args = results[0]
+	args = dict(driver="lime")
+	#args = results[0]
 	print("Instantiating device: ")
 	return SoapySDR.Device(args)
 
 
 def QueryDevice(sdr, chan):
-	print("Possible Antennas: " + str(sdr.listAntennas(SOAPY_SDR_RX, chan)))
+	#print("Possible Antennas: " + str(sdr.listAntennas(SOAPY_SDR_RX, 0)))
 
 	# query device info
-	print(sdr.listAntennas(SOAPY_SDR_RX, 0))
-	print(sdr.listGains(SOAPY_SDR_RX, 0))
+	print("Antennas: " + str(sdr.listAntennas(SOAPY_SDR_RX, 0)))
+	print("Gains: " + str(sdr.listGains(SOAPY_SDR_RX, 0)))
+	print("Frequency Range: ")
 	freqs = sdr.getFrequencyRange(SOAPY_SDR_RX, 0)
 	for freqRange in freqs: print(freqRange)
 
 
 def ConfigureDevice(sdr, MasterClockRate=30.72e6):
-	sdr.setMasterClockRate(MasterClockRate)
+	#sdr.setMasterClockRate(MasterClockRate)
 	print("Actual Master Clock Rate %f Msps" % (sdr.getMasterClockRate() / 1e6))
 
 
@@ -80,7 +81,7 @@ def StartRX(sdr, chan):
 	return sdr.setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32, chan)
 
 
-def RunRX(sdr, rxStream):
+def RunRX(sdr, rxStream, samplerate, freq):
 	###################################################
 	# create a re-usable buffer for rx samples
 	"""buff = np.array([0] * 2040,
@@ -130,20 +131,35 @@ def RunRX(sdr, rxStream):
 	print('===== receive a continuous stream =====')
 	sdr.activateStream(rxStream)
 	
-	buff0 = np.zeros(1024, np.complex64)
+	buff0 = np.zeros(2 * samplerate, np.complex64)
 	###buff1 = np.zeros(1024, np.complex64)
 	
 	print('readStream continuously...')
-	doneLoopTime = time.time() + 0.1
-	while time.time() < doneLoopTime:
+	#doneLoopTime = time.time() + 0.1
+	#while time.time() < doneLoopTime:
+	num_elements = 2 * samplerate
+	while num_elements > 0:
 		###sr = sdr.readStream(rxStream, [buff0, buff1], 1024)
-		sr = sdr.readStream(rxStream, buff0, 1024)
+		sr = sdr.readStream(rxStream, [buff0], 2*samplerate)
+		num_elements -= sr.ret
 	
 	sdr.deactivateStream(rxStream)
-	
-	print('readStream for a timeout...')
+	print(buff0[samplerate - 10: samplerate + 10])
+	#print('readStream for a timeout...')
 	#sr = sdr.readStream(rxStream, [buff0, buff1], 1024)
 	print(sr)
+	#print(sr.flags)
+
+	np.savetxt('limesdr_test_data_at_%.2eGHz.txt'%(freq), buff0.view(float).reshape(-1,2))
+	
+	#S = np.fft.fftshift(np.fft.fft(buff0, samplerate) / samplerate)
+	
+	#plt.figure(num=1)
+	#plt.subplot(211)
+	#t_us = np.arrange(N) / fs / 1e-6
+	#plt.plot(t_us, buff0.real, 'k', label='I')
+	#plt.plot(t_us, buff0.imag, 'r', label='Q')
+	#plt.xlim(t_us[0], t_us[-1])
 ###################################################
 # # start streaming
 # sdr.activateStream(rxStream, 0, 0, numSamps)
@@ -207,19 +223,20 @@ if __name__ == '__main__':
 	### Desired Parameters ###
 	chan = 0
 	antenna = "LNAW"
-	samplerate = 1e5
-	frequency = 1.42e9
+	samplerate = 30e6
+	#frequency = 1.42e9
+	frequency = float(sys.argv[1])
 	gain = 20
 	##########################
 
 	sdr = FindDevice()
-	#QueryDevice(sdr, chan)
+	QueryDevice(sdr, chan)
 
 	ConfigureDevice(sdr)
 	ConfigureRX(sdr, chan, RX_Antenna=antenna, RX_SampleRate=samplerate, CenterFrequency=frequency, RX_Gain=gain)
 
 	rxStream = StartRX(sdr, [chan])
-	RunRX(sdr, rxStream)
+	RunRX(sdr, rxStream, int(samplerate), frequency)
 	CloseRX(sdr, rxStream)
 
 # # start streaming
