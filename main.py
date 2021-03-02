@@ -4,7 +4,8 @@ import SoapySDR
 from SoapySDR import *  # SOAPY_SDR_ constants
 import numpy as np # use numpy for buffers
 import time
-
+import gps_dtg
+from datetime import datetime, timedelta
 
 def FindDevice():
 	# enumerate devices
@@ -40,23 +41,28 @@ def ConfigureRX(sdr, chan, RX_SampleRate=None, CenterFrequency=None, RX_Antenna=
 		        RX_FrequencyOffset=None):
 	if RX_SampleRate is not None:
 		print("Setting RX sample rate to %g" % RX_SampleRate)
-		sdr.setSampleRate(SOAPY_SDR_RX, chan, RX_SampleRate)
-		print("Actual Rx Rate %f Msps" % (sdr.getSampleRate(SOAPY_SDR_RX, chan) / 1e6))
+		sdr.setSampleRate(SOAPY_SDR_RX, chan[0], RX_SampleRate)
+		sdr.setSampleRate(SOAPY_SDR_RX, chan[1], RX_SampleRate)
+		print("Actual Rx Rate %f Msps" % (sdr.getSampleRate(SOAPY_SDR_RX, chan[0]) / 1e6))
 
 	if CenterFrequency is not None:
 		print("Setting RX frequency to %g" % CenterFrequency)
-		sdr.setFrequency(SOAPY_SDR_RX, chan, CenterFrequency)
-		print("Actual Rx Freq %f MHz" % (sdr.getFrequency(SOAPY_SDR_RX, chan) / 1e6))
+		sdr.setFrequency(SOAPY_SDR_RX, chan[0], CenterFrequency)
+		sdr.setFrequency(SOAPY_SDR_RX, chan[1], CenterFrequency)
+		print("Actual Rx Freq %f MHz" % (sdr.getFrequency(SOAPY_SDR_RX, chan[0]) / 1e6))
 
 	if RX_Antenna is not None:
 		print("Setting RX antenna to " + str(RX_Antenna))
-		sdr.setAntenna(SOAPY_SDR_RX, chan, RX_Antenna)
-		print("Antenna on Channel %i is %s" % (chan, sdr.getAntenna(SOAPY_SDR_RX, chan)))
+		sdr.setAntenna(SOAPY_SDR_RX, chan[0], RX_Antenna)
+		sdr.setAntenna(SOAPY_SDR_RX, chan[1], RX_Antenna)
+		print("Antenna on Channel %i is %s" % (chan[0], sdr.getAntenna(SOAPY_SDR_RX, chan[0])))
+		print("Antenna on Channel %i is %s" % (chan[1], sdr.getAntenna(SOAPY_SDR_RX, chan[1])))
 
 	if RX_Gain is not None:
 		print("Setting RX gain to " + str(RX_Gain))
-		sdr.setGain(SOAPY_SDR_RX, chan, RX_Gain)  ###TODO::Is LNA the Default?????
-		print("Actual Rx Gain %f " % (sdr.getGain(SOAPY_SDR_RX, chan)))
+		sdr.setGain(SOAPY_SDR_RX, chan[0], RX_Gain)  ###TODO::Is LNA the Default?????
+		sdr.setGain(SOAPY_SDR_RX, chan[1], RX_Gain)
+		print("Actual Rx Gain %f " % (sdr.getGain(SOAPY_SDR_RX, chan[0])))
 		# sdr.setGain(SOAPY_SDR_RX, 0, "TIA", 5.0)
 		# sdr.setGain(SOAPY_SDR_RX, 0, "PGA", 5.0)
 		# sdr.setGain(SOAPY_SDR_RX, 0, "LNA", 35.0)
@@ -78,10 +84,10 @@ def StartRX(sdr, chan):
 	print("Setting up RX stream")
 	args = dict(skipCal="false")
 	# return sdr.setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32, chan, args)
-	return sdr.setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32, chan)
+	return sdr.setupStream(SOAPY_SDR_RX, SOAPY_SDR_CS16, chan)
 
 
-def RunRX(sdr, rxStream, samplerate, freq):
+def RunRX(sdr, rxStream, samplerate, freq, time):
 	###################################################
 	# create a re-usable buffer for rx samples
 	"""buff = np.array([0] * 2040,
@@ -131,26 +137,28 @@ def RunRX(sdr, rxStream, samplerate, freq):
 	print('===== receive a continuous stream =====')
 	sdr.activateStream(rxStream)
 	
-	buff0 = np.zeros(2 * samplerate, np.complex64)
-	###buff1 = np.zeros(1024, np.complex64)
+	buff0 = np.zeros(2 * samplerate, np.int32)
+	buff1 = np.zeros(2 * samplerate, np.int32)
 	
 	print('readStream continuously...')
 	#doneLoopTime = time.time() + 0.1
 	#while time.time() < doneLoopTime:
 	num_elements = 2 * samplerate
 	while num_elements > 0:
-		###sr = sdr.readStream(rxStream, [buff0, buff1], 1024)
-		sr = sdr.readStream(rxStream, [buff0], 2*samplerate)
+		sr = sdr.readStream(rxStream, [buff0, buff1], 2 * samplerate)
+		#sr = sdr.readStream(rxStream, [buff0], 2*samplerate)
 		num_elements -= sr.ret
 	
 	sdr.deactivateStream(rxStream)
-	print(buff0[samplerate - 10: samplerate + 10])
+	#print(buff0[samplerate - 10: samplerate + 10])
 	#print('readStream for a timeout...')
 	#sr = sdr.readStream(rxStream, [buff0, buff1], 1024)
 	print(sr)
 	#print(sr.flags)
 
-	np.savetxt('limesdr_test_data_at_%.2eGHz.txt'%(freq), buff0.view(float).reshape(-1,2))
+	#np.savetxt('limesdr_test_data_at_%.2eGHz.txt'%(freq), buff0.view(float).reshape(-1,2))
+	np.savetxt(sys.argv[1] + time + '_%.2eGHz_chanA.txt'%(freq), buff0.view(int).reshape(-1,1))	#TODO: Change filepath
+	np.savetxt(sys.argv[1] + time + '_%.2eGHz_chanB.txt'%(freq), buff1.view(int).reshape(-1,1))	#TODO: Change filepath
 	
 	#S = np.fft.fftshift(np.fft.fft(buff0, samplerate) / samplerate)
 	
@@ -221,11 +229,13 @@ def CloseTX(sdr):
 
 if __name__ == '__main__':
 	### Desired Parameters ###
-	chan = 0
+	dtg1 = datetime.strptime("1 Jan 1970", "%d %b %Y")	#set to the epoch
+	dtg2 = datetime.strptime("1 Jan 1970", "%d %b %Y")	#set to the epoch
+	chan = [0,1]
 	antenna = "LNAW"
 	samplerate = 30e6
-	#frequency = 1.42e9
-	frequency = float(sys.argv[1])
+	frequency = 1.42e9
+	#frequency = float(sys.argv[1])	# Arg 1 is now obsolete. Update if you wish to use this.
 	gain = 20
 	##########################
 
@@ -235,10 +245,26 @@ if __name__ == '__main__':
 	ConfigureDevice(sdr)
 	ConfigureRX(sdr, chan, RX_Antenna=antenna, RX_SampleRate=samplerate, CenterFrequency=frequency, RX_Gain=gain)
 
-	rxStream = StartRX(sdr, [chan])
-	RunRX(sdr, rxStream, int(samplerate), frequency)
-	CloseRX(sdr, rxStream)
+	#try:
+	while True:		# run until manual termination or shutdown
+		time, dtg2 = gps_dtg.get_time()
+		dtg2 = datetime.strptime(dtg2, "%b%d%Y %M:%H:%S")	#TODO: Check this how the dtg is formatted directly from the GPS
 
+		if (dtg2 >= dtg1 + timedelta(minutes=10)):		# if it's been 10 minutes since the last time data was collected, collect more data
+			rxStream = StartRX(sdr, chan)
+			time, dtg2 = gps_dtg.get_time() #TODO: Get the time from GPS
+			RunRX(sdr, rxStream, int(samplerate), frequency, time)
+			CloseRX(sdr, rxStream)
+			dtg2 = datetime.strptime(dtg2, "%b%d%Y %M:%H:%S")
+			dtg1 = dtg2
+"""
+	except KeyboardInterrupt:
+		try:
+			sys.exit(0)
+
+		except:
+			os._exit(0)
+"""
 # # start streaming
 # sdr.activateStream(rxStream, 0, 0, numSamps)
 #
