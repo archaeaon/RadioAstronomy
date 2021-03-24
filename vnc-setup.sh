@@ -8,15 +8,17 @@ apt upgrade
 echo -e "Installing TightVNC server...\n"
 apt install tightvncserver
 
+user_name=seds	# change the username as appropriate
+port_number=1	# you can change the port number to whatever desired
+BASH_ALIASES=/home/"$user_name"/.bash_aliases
+
 echo -e "Creating alias to run TightVNC server...\n"
-touch ~/.bash_aliases
-echo "alias start-vnc='tightvncserver -nolisten tcp :1 -geometry 1920x1080'" >> ~/.bash_aliases	# this alias can be used to start VNC after remote login through SSH if all else fails
-source ~/.bash_aliases
+touch "$BASH_ALIASES"
+echo "alias start-vnc='tightvncserver -nolisten tcp :$port_number -geometry 1920x1080'" >> "$BASH_ALIASES"	# this alias can be used to start VNC after remote login through SSH if all else fails
+echo "alias stop-vnc='tightvncserver -kill :$port_number'" >> "$BASH_ALIASES"	# this can be used to stop tightvncserver
 
 # the below will always start the TightVNC server on port 1 (5901), the idea being port 0 (5900) would always be used for SSH
 filepath=/etc/systemd/system/tightvncserver.service
-port_number=1	# you can change the port number to whatever desired
-user_name=pi	# change the username as appropriate
 
 echo -e "Creating tightvncserver.service in /etc/systemd/system/...\n"
 touch "$filepath"
@@ -37,19 +39,11 @@ echo >> "$filepath"
 echo "[Install]" >> "$filepath"
 echo "WantedBy=multi-user.target" >> "$filepath"
 
-# change cursor type from being that annoying "X" shape
-filepath=/home/"$user_name"/.vnc/xstartup
-echo -e "Altering mouse cursor settings in $filepath...\n"
-sed -i "s;xsetroot -solid grey;xsetroot -solid grey -cursor_name left_ptr;" "$filepath"	# replaces the line inside the file at $filepath without needing to use text editor
-echo -e "NOTICE: Altering the mouse cursor settings may not have worked. You may need to change it yourself in $filepath..."
-
 echo -e "Reloading daemon...\n"
 systemctl daemon-reload
 echo -e "Enabling TightVNC server to start on boot...\n"
 systemctl enable tightvncserver.service	# the TightVNC server should now be started on boot automatically
 
-echo "The Tight VNC server should now be up and running. You can"
-echo "either run 'start-vnc' if you wish to test it immediately"
-echo "or you can reboot your machine to test if the server starts"
-echo "on boot."
-echo "REMINDER: Use port $port_number!"
+echo "The Tight VNC server should now be up and running."
+echo "IMPORTANT: Run 'start-vnc' before running vnc-config.sh!"
+echo "           You may need to source $BASH_ALIASES first."
