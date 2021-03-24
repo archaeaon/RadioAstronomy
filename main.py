@@ -38,7 +38,7 @@ def ConfigureDevice(sdr, MasterClockRate=30.72e6):
 
 
 def ConfigureRX(sdr, chan, RX_SampleRate=None, CenterFrequency=None, RX_Antenna=None, RX_Gain=None,
-		        RX_FrequencyOffset=None):
+				RX_FrequencyOffset=None):
 	if RX_SampleRate is not None:
 		print("Setting RX sample rate to %g" % RX_SampleRate)
 		sdr.setSampleRate(SOAPY_SDR_RX, chan[0], RX_SampleRate)
@@ -91,7 +91,7 @@ def RunRX(sdr, rxStream, samplerate, freq, time):
 	###################################################
 	# create a re-usable buffer for rx samples
 	"""buff = np.array([0] * 2040,
-		            np.complex64)
+				    np.complex64)
 	sdr.activateStream(rxStream, SOAPY_SDR_END_BURST, 0, buff.size)
 
 	# Receive samples, find pilot tone, put in neural network queue.
@@ -103,7 +103,7 @@ def RunRX(sdr, rxStream, samplerate, freq, time):
 		print("Number rx samples {}".format(sr.ret))  # num samples or error code
 
 		if sr.ret == -1:
-		    break
+			break
 
 		totalRead += sr.ret
 
@@ -129,9 +129,9 @@ def RunRX(sdr, rxStream, samplerate, freq, time):
 # buff0 = sampsRx[0]  # RF Chain A
 # buff1 = sampsRx[1]  # RF Chain B
 # sdr.activateStream(rxStream,  # stream object
-#		            SOAPY_SDR_END_BURST,  # flags
-#		            0,  # timeNs (don't care unless using SOAPY_SDR_HAS_TIME)
-#		            buff0.size)  # numElems - this is the burst size
+#				    SOAPY_SDR_END_BURST,  # flags
+#				    0,  # timeNs (don't care unless using SOAPY_SDR_HAS_TIME)
+#				    buff0.size)  # numElems - this is the burst size
 # sr = sdr.readStream(rxStream, [buff0, buff1], buff0.size)
 ################################################
 	print('===== receive a continuous stream =====')
@@ -157,9 +157,14 @@ def RunRX(sdr, rxStream, samplerate, freq, time):
 	#print(sr.flags)
 
 	#np.savetxt('limesdr_test_data_at_%.2eGHz.txt'%(freq), buff0.view(float).reshape(-1,2))
-	np.savetxt(sys.argv[1] + time + '_%.2eGHz_chanA.txt'%(freq), buff0.view(int).reshape(-1,1))	#TODO: Change filepath
-	np.savetxt(sys.argv[1] + time + '_%.2eGHz_chanB.txt'%(freq), buff1.view(int).reshape(-1,1))	#TODO: Change filepath
-	
+	#np.savetxt(sys.argv[1] + time + '_%.2eGHz_chanA.txt'%(freq), buff0.view(int).reshape(-1,1))
+	np.save(sys.argv[1] + time + '_%.2eGHz_chanA.npy'%(freq), buff0, allow_pickle=False, fix_imports=False)
+	print("Finished writing to A at:", gps_dtg.get_time())
+	# HOWTO: load this array using np.load(filename, allow_pickle=False, fix_imports=False)
+	#np.savetxt(sys.argv[1] + time + '_%.2eGHz_chanB.txt'%(freq), buff1.view(int).reshape(-1,1))
+	np.save(sys.argv[1] + time + '_%.2eGHz_chanB.npy'%(freq), buff1, allow_pickle=False, fix_imports=False)
+	print("Finished writing to B at:", gps_dtg.get_time())
+	# HOWTO: load this array using np.load(filename, allow_pickle=False, fix_imports=False)
 	#S = np.fft.fftshift(np.fft.fft(buff0, samplerate) / samplerate)
 	
 	#plt.figure(num=1)
@@ -186,7 +191,7 @@ def RunRX(sdr, rxStream, samplerate, freq, time):
 #	 if sr.ret > 0 and len(rxBuffs) == 0:
 #		 rxTime0 = sr.timeNs
 #		 if (sr.flags & SOAPY_SDR_HAS_TIME) == 0:
-#		     raise Exception('receive fail - no timestamp on first readStream %s' % (str(sr)))
+#			 raise Exception('receive fail - no timestamp on first readStream %s' % (str(sr)))
 #
 #	 # accumulate buffer or exit loop
 #	 if sr.ret > 0:
@@ -229,11 +234,13 @@ def CloseTX(sdr):
 
 if __name__ == '__main__':
 	### Desired Parameters ###
+	date_format = "%Y-%m-%d"
+	dtg_format = date_format + " %H:%M:%S.000Z"
 	dtg1 = datetime.strptime("1 Jan 1970", "%d %b %Y")	#set to the epoch
-	dtg2 = datetime.strptime("1 Jan 1970", "%d %b %Y")	#set to the epoch
+	dtg2 = dtg1	#set to the epoch
 	chan = [0,1]
 	antenna = "LNAW"
-	samplerate = 30e6
+	samplerate = 5e6
 	frequency = 1.42e9
 	#frequency = float(sys.argv[1])	# Arg 1 is now obsolete. Update if you wish to use this.
 	gain = 20
@@ -248,14 +255,14 @@ if __name__ == '__main__':
 	#try:
 	while True:		# run until manual termination or shutdown
 		time, dtg2 = gps_dtg.get_time()
-		dtg2 = datetime.strptime(dtg2, "%b%d%Y %M:%H:%S")	#TODO: Check this how the dtg is formatted directly from the GPS
+		dtg2 = datetime.strptime(dtg2, dtg_format)	#TODO: Check this how the dtg is formatted directly from the GPS
 
 		if (dtg2 >= dtg1 + timedelta(minutes=10)):		# if it's been 10 minutes since the last time data was collected, collect more data
 			rxStream = StartRX(sdr, chan)
 			time, dtg2 = gps_dtg.get_time() #TODO: Get the time from GPS
 			RunRX(sdr, rxStream, int(samplerate), frequency, time)
 			CloseRX(sdr, rxStream)
-			dtg2 = datetime.strptime(dtg2, "%b%d%Y %M:%H:%S")
+			dtg2 = datetime.strptime(dtg2, dtg_format)
 			dtg1 = dtg2
 """
 	except KeyboardInterrupt:
@@ -282,7 +289,7 @@ if __name__ == '__main__':
 #	 if sr.ret > 0 and len(rxBuffs) == 0:
 #		 rxTime0 = sr.timeNs
 #		 if (sr.flags & SOAPY_SDR_HAS_TIME) == 0:
-#		     raise Exception('receive fail - no timestamp on first readStream %s' % (str(sr)))
+#			 raise Exception('receive fail - no timestamp on first readStream %s' % (str(sr)))
 #
 #	 # accumulate buffer or exit loop
 #	 if sr.ret > 0:
@@ -323,7 +330,7 @@ if __name__ == '__main__':
 #	 if status.ret > 0 and rx_buffs.size == 0:
 #		 rx_time_0 = status.timeNs
 #		 if (status.flags & SOAPY_SDR_HAS_TIME) == 0:
-#		     raise Exception('receive fail - no timestamp on first readStream %s' % (str(status)))
+#			 raise Exception('receive fail - no timestamp on first readStream %s' % (str(status)))
 #
 #	 # accumulate buffer or exit loop
 #	 if status.ret > 0:
