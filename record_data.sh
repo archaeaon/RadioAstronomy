@@ -5,9 +5,9 @@ sudo systemctl stop gpsd.socket
 sudo gpsd /dev/serial0 -F /var/run/gpsd.sock
 
 ssd_filepath=/mnt/radio_capstone_ssd
-gps_date=`python gps_dtg.py`
+gps_date=`python set_system_time_from_gps.py`
 gps_date=`date --utc +"%d%b%Y" --date="$gps_date"`
-echo "$gps_date"
+#echo "$gps_date"	# not really needed since the python script prints out the full dtg
 #gps_date=`date --utc +"%d %b %Y"`
 
 if [ ! -d /mnt/radio_capstone_ssd/"$gps_date" ]	# check if the directory for today's date exists yet
