@@ -6,6 +6,7 @@ import numpy as np # use numpy for buffers
 import time
 import gps_dtg
 from datetime import datetime, timedelta
+import os
 
 def FindDevice():
 	# enumerate devices
@@ -159,11 +160,11 @@ def RunRX(sdr, rxStream, samplerate, freq, time):
 	#np.savetxt('limesdr_test_data_at_%.2eGHz.txt'%(freq), buff0.view(float).reshape(-1,2))
 	#np.savetxt(sys.argv[1] + time + '_%.2eGHz_chanA.txt'%(freq), buff0.view(int).reshape(-1,1))
 	np.save(sys.argv[1] + time + '_%.2eGHz_chanA.npy'%(freq), buff0, allow_pickle=False, fix_imports=False)
-	print("Finished writing to A at:", gps_dtg.get_time())
+	print("Finished writing to A at:") #, gps_dtg.get_time())
 	# HOWTO: load this array using np.load(filename, allow_pickle=False, fix_imports=False)
 	#np.savetxt(sys.argv[1] + time + '_%.2eGHz_chanB.txt'%(freq), buff1.view(int).reshape(-1,1))
 	np.save(sys.argv[1] + time + '_%.2eGHz_chanB.npy'%(freq), buff1, allow_pickle=False, fix_imports=False)
-	print("Finished writing to B at:", gps_dtg.get_time())
+	print("Finished writing to B at:") #, gps_dtg.get_time())
 	# HOWTO: load this array using np.load(filename, allow_pickle=False, fix_imports=False)
 	#S = np.fft.fftshift(np.fft.fft(buff0, samplerate) / samplerate)
 	
@@ -234,8 +235,8 @@ def CloseTX(sdr):
 
 if __name__ == '__main__':
 	### Desired Parameters ###
-	date_format = "%Y-%m-%d"
-	dtg_format = date_format + " %H:%M:%S.000Z"
+	#date_format = "%Y-%m-%d"
+	#dtg_format = date_format + " %H:%M:%S.000Z"
 	dtg1 = datetime.strptime("1 Jan 1970", "%d %b %Y")	#set to the epoch
 	dtg2 = dtg1	#set to the epoch
 	chan = [0,1]
@@ -254,15 +255,18 @@ if __name__ == '__main__':
 
 	#try:
 	while True:		# run until manual termination or shutdown
-		time, dtg2 = gps_dtg.get_time()
-		dtg2 = datetime.strptime(dtg2, dtg_format)	#TODO: Check this how the dtg is formatted directly from the GPS
+		#time, dtg2 = gps_dtg.get_time()
+		#dtg2 = datetime.strptime(dtg2, dtg_format)	#TODO: Check this how the dtg is formatted directly from the GPS
+		dtg2 = datetime.now()
 
-		if (dtg2 >= dtg1 + timedelta(minutes=10)):		# if it's been 10 minutes since the last time data was collected, collect more data
+		if (dtg2 >= dtg1 + timedelta(minutes=1)):		# if it's been 10 minutes since the last time data was collected, collect more data
 			rxStream = StartRX(sdr, chan)
-			time, dtg2 = gps_dtg.get_time() #TODO: Get the time from GPS
-			RunRX(sdr, rxStream, int(samplerate), frequency, time)
+			#time, dtg2 = gps_dtg.get_time() #TODO: Get the time from GPS
+			dtg2 = datetime.now()
+			time = dtg2.time()
+			RunRX(sdr, rxStream, int(samplerate), frequency, str(time))
 			CloseRX(sdr, rxStream)
-			dtg2 = datetime.strptime(dtg2, dtg_format)
+			#dtg2 = datetime.strptime(dtg2, dtg_format)
 			dtg1 = dtg2
 """
 	except KeyboardInterrupt:
