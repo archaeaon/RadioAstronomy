@@ -14,20 +14,20 @@ then
 elif [ "$1" == "manual" ]
 then
 	### For setting the system time manually ###
-	if [ -z "$1" -o -z "$2" ]
+	if [ -z "$2" -o -z "$3" ]
 	then
 		echo "Error: You must supply the date and time arguments."
 		echo "Please provide the desired date and time in the following format."
 		echo "Format: arg1=DDMMMYYYY arg2=HH:MM:SS (in 24-hr time format)"
 		exit
-	elif [[ ! "$1" =~ [0-3][0-9][A-Z][a-z]{2}20[0-9]{2} || ! "$2" =~ [0-2][0-9]:[0-5][0-9]:[0-5][0-9] ]]	# This is technically buggy, but it works for now
+	elif [[ ! "$2" =~ [0-3][0-9][A-Z][a-z]{2}20[0-9]{2} || ! "$3" =~ [0-2][0-9]:[0-5][0-9]:[0-5][0-9] ]]	# This is technically buggy, but it works for now
 	then													# Ex: A dtg of 45Apr2021 31:00:00 is technically allowed
 		echo "Error: Date and/or time format unrecognized!"
 		echo "Please provide the desired date and time in the following format."
 		echo "Format: arg1=DDMMMYYYY arg2=HH:MM:SS (in 24-hr time format)"
 		exit
 	else
-		date --utc +"%d%b%Y %R:%S" --set="$1 $2"	# set the date manually in "DDMMMYYYY HH:MM:SS" format
+		sudo date --utc +"%d%b%Y %R:%S" --set="$2 $3"	# set the date manually in "DDMMMYYYY HH:MM:SS" format
 		date						# print the dtg similar to how the Python script would to show that it worked
 	fi
 
