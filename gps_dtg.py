@@ -1,3 +1,7 @@
+# NOTE: This file was used in a previous iteration of our project's software.
+#	It is currently unused and has been replaced by set_system_time_from_gps.py.
+#	This file is only kept in case the functions in it might be needed in the future.
+
 from gps import *
 
 def get_gps_datetime (gpsd):
