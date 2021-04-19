@@ -64,9 +64,12 @@ def ConfigureRX(sdr, chan, RX_SampleRate=None, CenterFrequency=None, RX_Antenna=
 		sdr.setGain(SOAPY_SDR_RX, chan[0], RX_Gain)  ###TODO::Is LNA the Default?????
 		sdr.setGain(SOAPY_SDR_RX, chan[1], RX_Gain)
 		print("Actual Rx Gain %f " % (sdr.getGain(SOAPY_SDR_RX, chan[0])))
-		# sdr.setGain(SOAPY_SDR_RX, 0, "TIA", 5.0)
-		# sdr.setGain(SOAPY_SDR_RX, 0, "PGA", 5.0)
-		# sdr.setGain(SOAPY_SDR_RX, 0, "LNA", 35.0)
+		sdr.setGain(SOAPY_SDR_RX, chan[0], "TIA", 2.0)
+		sdr.setGain(SOAPY_SDR_RX, chan[0], "PGA", 10.0)
+		sdr.setGain(SOAPY_SDR_RX, chan[0], "LNA", 25.0)
+		sdr.setGain(SOAPY_SDR_RX, chan[1], "TIA", 2.0)
+		sdr.setGain(SOAPY_SDR_RX, chan[1], "PGA", 10.0)
+		sdr.setGain(SOAPY_SDR_RX, chan[1], "LNA", 25.0)
 
 	# #set dc offset mode to False to disable automatic DC bias removal
 	# sdr.setDCOffsetMode(SOAPY_SDR_RX, chan, False)
@@ -244,7 +247,7 @@ if __name__ == '__main__':
 	samplerate = 5e6
 	frequency = 1.42e9
 	#frequency = float(sys.argv[1])	# Arg 1 is now obsolete. Update if you wish to use this.
-	gain = 20
+	gain = 30
 	##########################
 
 	sdr = FindDevice()
